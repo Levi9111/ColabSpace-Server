@@ -130,4 +130,22 @@ export class AuthService {
       },
     );
   }
+
+  generateTokens(
+    userId: string,
+    name: string,
+    userName: string,
+    email: string,
+    role: string,
+    isAuthenticated: boolean,
+  ) {
+    const payload = {
+      userId,
+      name,
+      userName,
+      email,
+      role,
+      isAuthenticated,
+    };
+  }
 }
