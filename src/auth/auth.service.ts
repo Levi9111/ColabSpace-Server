@@ -1,14 +1,25 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { ConfigService } from '@nestjs/config';
 import { GenerateOtpDto } from './dto/generate-otp.dto';
+import { transporter } from 'src/utils/transporter.email';
+import { InjectModel } from '@nestjs/mongoose';
+import { User } from 'src/users/schemas/user.schema';
+import { Model } from 'mongoose';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
@@ -72,5 +83,51 @@ export class AuthService {
     } else {
       html = `<p>Invalid action.</p>`;
     }
+
+    await transporter().sendMail({
+      from: this.config.get<string>('ADMIN_EMAIL'),
+      to: dto.email,
+      subject,
+      html,
+    });
+
+    await this.userModel.findOneAndUpdate(
+      {
+        email: dto.email,
+      },
+      {
+        otp: hashedOtp,
+        otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    );
+  }
+
+  async verifyOtp(dto: VerifyOtpDto) {
+    const user = await this.userModel.findOne({ email: dto.email });
+
+    if (!user) throw new NotFoundException('User Not Found!');
+    if (!user.otp) throw new UnauthorizedException('Otp Not Found');
+
+    const isOtpValid = await bcrypt.compare(dto.otp, user.otp);
+    const isOtpExpired = new Date(user.otpExpiresAt).getTime() < Date.now();
+
+    if (!user.otpExpiresAt || !isOtpValid || !isOtpExpired) {
+      throw new UnauthorizedException('Invalid of expired OTP');
+    }
+
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      {
+        email: dto.email,
+      },
+      {
+        isAuthenticated: true,
+        otp: null,
+        otpExpiresAt: null,
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
   }
 }
