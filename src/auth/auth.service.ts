@@ -15,6 +15,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/users/schemas/user.schema';
 import { Model } from 'mongoose';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { generateToken } from 'src/jwt/jwt.utils';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -30,20 +32,45 @@ export class AuthService {
 
     if (existing) throw new ConflictException('Email already registered!');
 
-    // const hashed = await bcrypt.hash(
-    //   dto.password,
-    //   Number(this.config.get<string>('BCRYPT_SALT_ROUNDS')),
-    // );
+    const hashed = await bcrypt.hash(
+      dto.password,
+      Number(this.config.get<string>('BCRYPT_SALT_ROUNDS')),
+    );
 
-    const hashed = await bcrypt.hash(dto.password, 10);
+    // const hashed = await bcrypt.hash(dto.password, 10);
     const user = await this.usersService.createUser({
       ...dto,
       password: hashed,
     });
 
-    // return this.generateTokens(
-    //     user._id as string
-    // )
+    return this.generateTokens(
+      user._id as string,
+      user.email,
+      user.role,
+      user.isAuthenticated,
+    );
+  }
+
+  async login(dto: LoginDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const matched = await bcrypt.compare(
+      dto.password,
+      user?.password as string,
+    );
+    if (!matched) {
+      throw new UnauthorizedException('incorrect password');
+    }
+
+    return this.generateTokens(
+      user._id as string,
+      user.email,
+      user.role,
+      user.isAuthenticated,
+    );
   }
 
   async generateOtp(
@@ -115,7 +142,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid of expired OTP');
     }
 
-    const updatedUser = await this.userModel.findByIdAndUpdate(
+    const updatedUser = (await this.userModel.findByIdAndUpdate(
       {
         email: dto.email,
       },
@@ -128,24 +155,41 @@ export class AuthService {
         new: true,
         runValidators: true,
       },
+    )) as User;
+
+    return this.generateTokens(
+      updatedUser._id as string,
+      updatedUser.email,
+      updatedUser.role,
+      updatedUser.isAuthenticated,
     );
   }
 
   generateTokens(
     userId: string,
-    name: string,
-    userName: string,
     email: string,
     role: string,
     isAuthenticated: boolean,
   ) {
     const payload = {
       userId,
-      name,
-      userName,
       email,
       role,
       isAuthenticated,
     };
+
+    const accessToken = generateToken(
+      payload,
+      this.config.get<string>('JWT_ACCESS_SECRET')!,
+      this.config.get<string>('ACCESS_TOKEN_EXPIRATION')!,
+    );
+
+    const refreshToken = generateToken(
+      payload,
+      this.config.get<string>('JWT_REFRESH_SECRET')!,
+      this.config.get<string>('REFRESH_TOKEN_EXPIRATION')!,
+    );
+
+    return { accessToken, refreshToken };
   }
 }

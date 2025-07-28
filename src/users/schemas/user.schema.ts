@@ -7,7 +7,7 @@ export class User extends Document {
   email: string;
 
   @Prop({ required: true })
-  passwrod: string;
+  password: string;
 
   @Prop({ default: 'user' })
   role: 'user' | 'admin';
