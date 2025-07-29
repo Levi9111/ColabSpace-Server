@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { ConfigService } from '@nestjs/config';
 import { GenerateOtpDto } from './dto/generate-otp.dto';
@@ -57,10 +57,7 @@ export class AuthService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    const matched = await bcrypt.compare(
-      dto.password,
-      user?.password as string,
-    );
+    const matched = await bcrypt.compare(dto.password, user?.password);
     if (!matched) {
       throw new UnauthorizedException('incorrect password');
     }
