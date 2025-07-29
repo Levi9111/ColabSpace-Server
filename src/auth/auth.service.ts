@@ -15,7 +15,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/users/schemas/user.schema';
 import { Model } from 'mongoose';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-import { generateToken } from 'src/jwt/jwt.utils';
+import { generateToken, verifyToken } from 'src/jwt/jwt.utils';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
@@ -188,5 +188,33 @@ export class AuthService {
     );
 
     return { accessToken, refreshToken };
+  }
+
+  async generateRefreshTokens(token: string) {
+    const decoded = verifyToken(
+      token,
+      this.config.get<string>('JWT_REFRESH_SECRET')!,
+    );
+
+    const { userId } = decoded as Record<string, string>;
+
+    const user = await this.usersService.findById(userId);
+
+    const jwtPayload = {
+      userId: user._id as string,
+      email: user.email,
+      role: user.role,
+      isAuthenticated: user.isAuthenticated,
+    };
+
+    const accessToken = generateToken(
+      jwtPayload,
+      this.config.get<string>('JWT_ACCESS_SECRET')!,
+      this.config.get<string>('ACCESS_TOKEN_EXPIRATION')!,
+    );
+
+    return {
+      accessToken,
+    };
   }
 }
