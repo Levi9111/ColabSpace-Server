@@ -9,7 +9,6 @@ import { ROLES_KEY } from 'src/decorators/roles.decorator';
 
 export enum UserRole {
   USER = 'user',
-  ARTIST = 'artist',
   ADMIN = 'admin',
 }
 
