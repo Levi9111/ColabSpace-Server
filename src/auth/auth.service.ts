@@ -135,7 +135,7 @@ export class AuthService {
     const isOtpValid = await bcrypt.compare(dto.otp, user.otp);
     const isOtpExpired = new Date(user.otpExpiresAt).getTime() < Date.now();
 
-    if (!user.otpExpiresAt || !isOtpValid || !isOtpExpired) {
+    if (!user.otpExpiresAt || !isOtpValid || isOtpExpired) {
       throw new UnauthorizedException('Invalid of expired OTP');
     }
 
