@@ -15,6 +15,8 @@ import { Request, Response } from 'express';
 import { LoginDto } from './dto/login.dto';
 import { GenerateOtpDto } from './dto/generate-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { JwtAuthGuard } from 'src/jwt/guards/jwt-auth.guard';
+import { RoleGuards } from 'src/jwt/guards/roles.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -72,7 +74,7 @@ export class AuthController {
   }
 
   @Get('me')
-  //   @UseGuards(JwtAuthGuard,RoleGuards)
+  @UseGuards(JwtAuthGuard, RoleGuards)
   me(@Req() req: Request) {
     return req.user;
   }
