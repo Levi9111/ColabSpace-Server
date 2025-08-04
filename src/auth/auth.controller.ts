@@ -17,6 +17,7 @@ import { GenerateOtpDto } from './dto/generate-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { JwtAuthGuard } from 'src/jwt/guards/jwt-auth.guard';
 import { RoleGuards } from 'src/jwt/guards/roles.guard';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -87,6 +88,11 @@ export class AuthController {
   @Post('forgot-password/generate-otp')
   async genrateOtpForPassword(@Body() dto: GenerateOtpDto) {
     await this.authService.generateOtp(dto, 'passwordReset');
+  }
+
+  @Post('forgot-password/reset')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   @Post('verify-otp')

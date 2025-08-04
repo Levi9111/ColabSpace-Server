@@ -18,6 +18,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { generateToken, verifyToken } from 'src/jwt/jwt.utils';
 import { LoginDto } from './dto/login.dto';
 import { buildOtpEmailTemplate } from 'src/utils/email.template';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -69,6 +70,31 @@ export class AuthService {
       user.role,
       user.isAuthenticated,
     );
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!user.isAuthenticated)
+      throw new UnauthorizedException('Please verify the OTP first');
+
+    const hashedPassword = await bcrypt.hash(
+      dto.password,
+      Number(this.config.get<string>('BCRYPT_SALT_ROUNDS')),
+    );
+
+    user.password = hashedPassword;
+    user.otp = null;
+
+    await user.save();
+
+    return {
+      message: 'Password reset successfully',
+    };
   }
 
   async generateOtp(
