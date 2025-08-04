@@ -225,7 +225,7 @@ export function buildOtpEmailTemplate(
           `
               : `
           <div class="security-note">
-            <p><strong>Security Notice:</strong> This verification code is unique to your account. Never share it with anyone, and only enter it on the official SoulBot website.</p>
+            <p><strong>Security Notice:</strong> This verification code is unique to your account. Never share it with anyone, and only enter it on the official ColabSpace website.</p>
           </div>
           `
           }
@@ -234,7 +234,7 @@ export function buildOtpEmailTemplate(
 
           <p style="font-size: 14px; color: #6b7280; margin: 0;">
             Having trouble? Reply to this email or contact our support team at 
-            <a href="mailto:support@soulbot.com" style="color: ${brandColor}; text-decoration: none;">support@soulbot.com</a>
+            <a href="mailto:support@colabspace.com" style="color: ${brandColor}; text-decoration: none;">support@colabspace.com</a>
           </p>
         </div>
 

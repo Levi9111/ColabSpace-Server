@@ -17,6 +17,7 @@ import { Model } from 'mongoose';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { generateToken, verifyToken } from 'src/jwt/jwt.utils';
 import { LoginDto } from './dto/login.dto';
+import { buildOtpEmailTemplate } from 'src/utils/email.template';
 
 @Injectable()
 export class AuthService {
@@ -78,35 +79,7 @@ export class AuthService {
 
     const hashedOtp = await bcrypt.hash(otp, 10);
 
-    let html = '';
-    let subject = '';
-
-    if (action === 'emailVerification') {
-      subject = 'Your Email verification code.';
-      html = `
-    <p>Hello,</p>
-    <p>Your ColabSpace email verification code is: <span style="display:inline-block; background:#f0f4ff; color:#1a237e; font-size:1.35em; font-weight:bold; letter-spacing:2px; padding:8px 18px; border-radius:6px; border:1px solid #c5cae9;">
-    ${otp}
-    </span></p>
-    <p>Please enter this code in the app to verify your email address.</p>
-    <br/>
-    <p>Thank you,<br/>The ColabSpace Team</p>
-  `;
-    } else if (action === 'passwordReset') {
-      subject = 'Your ColabSpace password reset verification code.';
-      html = `
-    <p>Hello,</p>
-    <p>We received a request to reset your ColabSpace password.</p>
-    <p>Your password reset code is: <span style="display:inline-block; background:#f0f4ff; color:#1a237e; font-size:1.35em; font-weight:bold; letter-spacing:2px; padding:8px 18px; border-radius:6px; border:1px solid #c5cae9;">
-    ${otp}
-    </span></p>
-    <p>If you did not request this, please ignore this email.</p>
-    <br/>
-    <p>Thank you,<br/>The ColabSpace Team</p>
-  `;
-    } else {
-      html = `<p>Invalid action.</p>`;
-    }
+    const { html, subject } = buildOtpEmailTemplate(otp, action);
 
     await transporter().sendMail({
       from: this.config.get<string>('ADMIN_EMAIL'),
@@ -140,9 +113,7 @@ export class AuthService {
     }
 
     const updatedUser = (await this.userModel.findByIdAndUpdate(
-      {
-        email: dto.email,
-      },
+      user._id,
       {
         isAuthenticated: true,
         otp: null,
